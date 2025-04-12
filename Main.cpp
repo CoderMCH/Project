@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
 
 	Render.join();
 
+	cout << (link->next ? "leak" : "empty") << endl;
 	delete link;
 	return 0;
 }

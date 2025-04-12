@@ -8,4 +8,3 @@ struct Link {
 	Link* next = nullptr;
 };
 int linkCount(Link* l);
-

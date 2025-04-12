@@ -7,6 +7,10 @@
 #include <Windows.h>
 
 #include "Link.h"
+#include "Shader.h"
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
 
 using namespace std;
 

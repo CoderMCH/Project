@@ -2,21 +2,6 @@
 
 using namespace std;
 
-// Vertex Shader source code
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
-//Fragment Shader source code
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(0.8f, 0.3f, 0.02f, 1.0f);\n"
-"}\n\0";
-
 Rendering::Rendering() {
 	cout << "Default Rendering" << endl;
 };
@@ -58,58 +43,46 @@ void Rendering::render() {
 	// set image to window size
 	glViewport(0, 0, width, height);
 
-	// shader programe
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
 	// get obj vertices
-	int a_size = this->link->obj->getVerticesSize();
-	void* a = this->link->obj->getVertices();
-	// swap obj vertices into buffer
-	GLuint VAO, VBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+	int vertices_size = this->link->obj->getVerticesSize();
+	void* vertices = this->link->obj->getVertices();
+	int indeices_size = this->link->obj->getIndicesSize();
+	void* indices = this->link->obj->getIndices();
 
-	glBindVertexArray(VAO);
+	// Generate Shader object using default.ver and default .frag
+	Shader shaderProgram("default.vert", "default.frag");
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, a_size * sizeof(GLfloat), a, GL_STATIC_DRAW);
+	// Generate vertex array object and binds it
+	VAO VAO1;
+	VAO1.bind();
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	// Generate vertex buffer object and link to vertices
+	VBO VBO1((GLfloat*)vertices, vertices_size * sizeof(GLfloat));
+	// Generate element buffer object and link to indices
+	EBO EBO1((GLfloat*)indices, indeices_size * sizeof(GLuint));
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-
-	// set color
-	glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-	// clean color buffer and assign new color
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	// swap image into window
-	glfwSwapBuffers(window);
+	// link VBO to VAO
+	VAO1.linkVBO(VBO1, 0);
+	VAO1.unbind();
+	VBO1.unbind();
+	EBO1.unbind();
 
 	// rendering loop
 	while (!glfwWindowShouldClose(window)) {
+		// set color
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		// clean color buffer and assign new color
 		glClear(GL_COLOR_BUFFER_BIT);
-		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		// activate shader
+		shaderProgram.activate();
+		// bind VAO
+		VAO1.bind();
+		
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+
+		// swap image into window
 		glfwSwapBuffers(window);
 
 		// take care of all glfw events
@@ -117,9 +90,10 @@ void Rendering::render() {
 	}
 
 	// delete shader
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+	VAO1.deleteVAO();
+	VBO1.deleteVBO();
+	EBO1.deleteEBO();
+	shaderProgram.deactivate();
 
 	// terminate window before ending the programe
 	glfwDestroyWindow(window);
