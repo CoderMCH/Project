@@ -8,7 +8,7 @@ Rendering::Rendering() {
 Rendering::Rendering(Link* link) {
 	cout << "Rendering created" << endl;
 	this->link = link;
-	cout << "obj has " << this->link->obj->getVerticesSize() << " vertices" << endl;
+	cout << "obj has " << this->link->obj->getVertices().size() << " vertices" << endl;
 };
 Rendering::~Rendering() {
 	cout << "Rendering deleted" << endl;
@@ -44,10 +44,8 @@ void Rendering::render() {
 	glViewport(0, 0, width, height);
 
 	// get obj vertices
-	int vertices_size = this->link->obj->getVerticesSize();
-	void* vertices = this->link->obj->getVertices();
-	int indeices_size = this->link->obj->getIndicesSize();
-	void* indices = this->link->obj->getIndices();
+	vector<GLfloat> vertices = link->obj->getVertices();
+	vector<GLuint> indices = link->obj->getIndices();
 
 	// Generate Shader object using default.ver and default .frag
 	Shader shaderProgram("default.vert", "default.frag");
@@ -57,25 +55,29 @@ void Rendering::render() {
 	VAO1.bind();
 
 	// Generate vertex buffer object and link to vertices
-	VBO VBO1((GLfloat*)vertices, vertices_size * sizeof(GLfloat));
+	VBO VBO1((GLfloat*)vertices.data(), vertices.size()* sizeof(GLfloat));
 	// Generate element buffer object and link to indices
-	EBO EBO1((GLfloat*)indices, indeices_size * sizeof(GLuint));
+	EBO EBO1((GLfloat*)indices.data(), indices.size() * sizeof(GLuint));
 
 	// link VBO to VAO
-	VAO1.linkVBO(VBO1, 0);
+	VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, 6 * sizeof(GLfloat), (void*)0);
+	VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 	VAO1.unbind();
 	VBO1.unbind();
 	EBO1.unbind();
 
+	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
+
 	// rendering loop
 	while (!glfwWindowShouldClose(window)) {
-		// set color
+		// set background color
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// clean color buffer and assign new color
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// activate shader
 		shaderProgram.activate();
+		glUniform1f(uniID, 1.0f);
 		// bind VAO
 		VAO1.bind();
 		
