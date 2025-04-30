@@ -46,6 +46,10 @@ void Rendering::render() {
 	// get obj vertices
 	vector<GLfloat> vertices = link->obj->getVertices();
 	vector<GLuint> indices = link->obj->getIndices();
+	int stride = link->obj->getStride();
+	int offPos = link->obj->getOffPos();
+	int offCol = link->obj->getOffCol();
+	int offTex = link->obj->getOffTex();
 
 	// Generate Shader object using default.ver and default .frag
 	Shader shaderProgram("default.vert", "default.frag");
@@ -60,13 +64,19 @@ void Rendering::render() {
 	EBO EBO1((GLfloat*)indices.data(), indices.size() * sizeof(GLuint));
 
 	// link VBO to VAO
-	VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, 6 * sizeof(GLfloat), (void*)0);
-	VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, stride * sizeof(GLfloat), (void*)offPos);
+	VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, stride * sizeof(GLfloat), (void*)(offCol * sizeof(GLfloat)));
+	VAO1.linkAttrib(VBO1, 2, 2, GL_FLOAT, stride * sizeof(GLfloat), (void*)(offTex * sizeof(GLfloat)));
 	VAO1.unbind();
 	VBO1.unbind();
 	EBO1.unbind();
 
 	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
+
+	// Texture
+	string file = link->obj->getTex();
+	Texture tex(file.c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE);
+	tex.texUnit(shaderProgram, "tex0", 0);
 
 	// rendering loop
 	while (!glfwWindowShouldClose(window)) {
@@ -77,12 +87,13 @@ void Rendering::render() {
 
 		// activate shader
 		shaderProgram.activate();
-		glUniform1f(uniID, 1.0f);
+		glUniform1f(uniID, 0.0);
+		tex.bind();
 		// bind VAO
 		VAO1.bind();
 		
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// swap image into window
 		glfwSwapBuffers(window);
@@ -95,6 +106,7 @@ void Rendering::render() {
 	VAO1.deleteVAO();
 	VBO1.deleteVBO();
 	EBO1.deleteEBO();
+	tex.deleteTex();
 	shaderProgram.deactivate();
 
 	// terminate window before ending the programe
