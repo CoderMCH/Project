@@ -7,13 +7,20 @@ out vec3 color;
 out vec2 texCoord;
 
 uniform float scale;
+uniform float rad;
 
 void main()
 {
-   gl_Position = vec4(aPos.x + aPos.x * scale,
-	aPos.y + aPos.y * scale,
-	aPos.z + aPos.z * scale,
-	1.0);
-   color = aColor;
-   texCoord = aTex;
+	/* gl_Position = vec4(
+		aPos.x + aPos.x * scale,
+		aPos.y + aPos.y * scale,
+		aPos.z + aPos.z * scale,
+		1.0); */
+	gl_Position = vec4(
+		aPos.x * cos(rad) + aPos.z * sin(rad),
+		aPos.y,
+		 aPos.x * -sin(rad) + aPos.z * cos(rad),
+		1.0);
+	color = aColor;
+	texCoord = aTex;
 }

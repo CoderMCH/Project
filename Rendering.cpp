@@ -1,5 +1,7 @@
 #include "Rendering.h"
 
+# define M_PI           3.14159265358979323846  /* pi */
+
 using namespace std;
 
 Rendering::Rendering() {
@@ -64,36 +66,53 @@ void Rendering::render() {
 	EBO EBO1((GLfloat*)indices.data(), indices.size() * sizeof(GLuint));
 
 	// link VBO to VAO
-	VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, stride * sizeof(GLfloat), (void*)offPos);
-	VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, stride * sizeof(GLfloat), (void*)(offCol * sizeof(GLfloat)));
-	VAO1.linkAttrib(VBO1, 2, 2, GL_FLOAT, stride * sizeof(GLfloat), (void*)(offTex * sizeof(GLfloat)));
+	int a_size = stride * sizeof(GLfloat);
+	VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, a_size, (void*)offPos);
+	VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, a_size, (void*)(offCol * sizeof(GLfloat)));
+	VAO1.linkAttrib(VBO1, 2, 2, GL_FLOAT, a_size, (void*)(offTex * sizeof(GLfloat)));
 	VAO1.unbind();
 	VBO1.unbind();
 	EBO1.unbind();
 
 	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
+	GLuint rad = glGetUniformLocation(shaderProgram.ID, "rad");
 
 	// Texture
 	string file = link->obj->getTex();
 	Texture tex(file.c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE);
 	tex.texUnit(shaderProgram, "tex0", 0);
 
+	// not render planes behind
+	glEnable(GL_DEPTH_TEST);
+
+	// set angular speed
+	float angular_speed = -M_PI/ 360;
+	float theta = 0.0;
+	float param = 0.0;
+
 	// rendering loop
 	while (!glfwWindowShouldClose(window)) {
 		// set background color
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(0.07f, 0.13f, 0.17f, 0.0f);
 		// clean color buffer and assign new color
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// activate shader
 		shaderProgram.activate();
 		glUniform1f(uniID, 0.0);
+
+		// rotate pryamid along Y-axis 
+		if (theta < -M_PI) theta += M_PI;
+		glUniform1f(rad, theta += angular_speed);
+		glGetUniformfv(shaderProgram.ID, rad, &param);
+		cout << "expected rad: " << theta << ", actual rad: " << theta << endl;
+		// bind texture
 		tex.bind();
 		// bind VAO
 		VAO1.bind();
 		
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 		// swap image into window
 		glfwSwapBuffers(window);
